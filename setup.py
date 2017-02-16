@@ -19,9 +19,9 @@ setup(
         '/tarball/master#egg=nothashes'
     ],
     install_requires = [
-        'flask',
+        'flask>0',
         'flask_restful',
         'pypremis',
-        'nothashes'
+        'nothashes',
     ],
 )
