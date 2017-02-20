@@ -114,7 +114,7 @@ class MakePREMIS(Resource):
 def handle_configs(setup_state):
     app = setup_state.app
     BLUEPRINT.config.update(app.config)
-    if BLUEPRINT.config.get("tempdir"):
-        tempfile.tempdir = BLUEPRINT.config['tempdir']
+    if BLUEPRINT.config.get("TEMPDIR"):
+        tempfile.tempdir = BLUEPRINT.config['TEMPDIR']
 
 API.add_resource(MakePREMIS, "/")
