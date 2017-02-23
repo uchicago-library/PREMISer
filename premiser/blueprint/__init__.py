@@ -4,9 +4,10 @@ from pathlib import Path
 from xml.etree.ElementTree import tostring
 from io import BytesIO
 from datetime import datetime
+import logging
 
 from werkzeug.datastructures import FileStorage
-from flask import Blueprint, send_file
+from flask import Blueprint, send_file, abort
 from flask_restful import Resource, Api, reqparse
 
 from .lib import make_record
@@ -22,6 +23,8 @@ BLUEPRINT.config = {}
 
 
 API = Api(BLUEPRINT)
+
+log = logging.getLogger(__name__)
 
 
 # RPC-like
@@ -58,6 +61,8 @@ class MakePREMIS(Resource):
             )
             rec.add_event(event)
 
+        log.info("POST received")
+        log.debug("Parsing arguments")
         parser = reqparse.RequestParser()
         parser.add_argument(
             "file",
@@ -81,23 +86,35 @@ class MakePREMIS(Resource):
             default=None
         )
         args = parser.parse_args()
+        log.debug("Arguments parsed")
 
+        log.debug("Creating a temporary directory to work in.")
         tmpdir = tempfile.TemporaryDirectory()
         tmp_file_path = str(Path(tmpdir.name, uuid4().hex))
 
+        log.debug("Saving file into tmpdir")
         args['file'].save(tmp_file_path)
 
+        log.debug("Creating PREMIS...")
         rec = make_record(tmp_file_path, original_name=args['originalName'])
+        log.debug("PREMIS created")
 
         if args['md5']:
+            log.debug("Checking md5")
             if not get_md5(rec) == args['md5']:
-                raise ValueError('md5 mismatch!')
+                log.critical("Computed md5 ({}) ".format(get_md5(rec)) +
+                             "doesn't match provided md5 " +
+                             "({})".format(args['md5']))
+                abort(500)
             else:
+                log.debug("Fixity confirmed, creating event")
                 make_fixity_conf_event(rec)
+                log.debug("Fixity confirmation event created")
 
         rec_str = tostring(rec.to_tree().getroot(), encoding="unicode")
 
         # Cleanup
+        log.debug("Cleaning up tmpdir")
         del tmpdir
         # Return the file as an attachment
         return send_file(
@@ -116,5 +133,9 @@ def handle_configs(setup_state):
     BLUEPRINT.config.update(app.config)
     if BLUEPRINT.config.get("TEMPDIR"):
         tempfile.tempdir = BLUEPRINT.config['TEMPDIR']
+    if BLUEPRINT.config.get("VERBOSITY"):
+        logging.basicConfig(level=BLUEPRINT.config['VERBOSITY'])
+    else:
+        logging.basicConfig(level="WARN")
 
 API.add_resource(MakePREMIS, "/")
