@@ -1,4 +1,5 @@
 FROM python:3.5-alpine
+RUN apk add --no-cache file
 COPY . /code
 WORKDIR /code
 RUN python setup.py install

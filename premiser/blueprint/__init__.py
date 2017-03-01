@@ -7,7 +7,7 @@ from datetime import datetime
 import logging
 
 from werkzeug.datastructures import FileStorage
-from flask import Blueprint, send_file, abort
+from flask import Blueprint, send_file, abort, Response
 from flask_restful import Resource, Api, reqparse
 
 from .lib import make_record
@@ -27,8 +27,44 @@ API = Api(BLUEPRINT)
 log = logging.getLogger(__name__)
 
 
+def output_html(data, code, headers=None):
+    # https://github.com/flask-restful/flask-restful/issues/124
+    resp = Response(data, mimetype='text/html', headers=headers)
+    resp.status_code = code
+    return resp
+
+
 # RPC-like
 class MakePREMIS(Resource):
+    def get(self):
+        resp = """<html>
+    <body>
+        <h1>
+        Create a PREMIS metadata record for a file.
+        </h1>
+        <form action=""
+        enctype="multipart/form-data" method="post">
+        <p>
+        Please specify a file:<br>
+        <input type="file" name="file" size="40">
+        </p>
+        <p>
+        originalName:<br>
+        <input type="text" name="originalName" size="30">
+        </p>
+        <p>
+        File md5 (optional):<br>
+        <input type="text" name="md5" size="30">
+        </p>
+        <div>
+        <input type="submit" value="Submit">
+        </div>
+        </form>
+    </body>
+</html>
+"""
+        return output_html(resp, 200)
+
     def post(self):
 
         def get_md5(rec):

@@ -3,10 +3,7 @@ from mimetypes import guess_type
 from uuid import uuid4
 from hashlib import md5, sha256
 from datetime import datetime
-try:
-    from magic import from_file
-except:
-    pass
+from magic import from_file
 
 from pypremis.lib import PremisRecord
 from pypremis.nodes import *
@@ -243,12 +240,6 @@ def _detect_mime(file_path, original_name):
     1. (str): magic number mime detected
     2. (str): file extension mime detected
     """
-    try:
-        magic_num = from_file(file_path, mime=True)
-    except:
-        magic_num = None
-    try:
-        guess = guess_type(original_name)[0]
-    except:
-        guess = None
+    magic_num = from_file(file_path, mime=True)
+    guess = guess_type(original_name)[0]
     return magic_num, guess
